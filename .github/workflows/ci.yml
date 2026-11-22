@@ -1,0 +1,27 @@
+name: CI Replay Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.13-slim
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate API scaffold
+        run: |
+          python -c "from replay.api.app import app; assert app.title == 'Replay'; assert any(route.path == '/health' for route in app.routes)"
+
+      - name: Validate documentation YAML dependencies
+        run: python -c "import yaml; print('PyYAML available')"
