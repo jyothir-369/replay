@@ -116,14 +116,13 @@ CREATE TABLE events (
 **Objective:** real workflows, not toy loops.
 
 **Tasks**
-1. `llm` step: provider adapter interface (`complete(messages, tools, params) -> response`) with two real providers plus a **Fake LLM** that returns scripted outputs for tests.
-2. `tool` step: registry with JSON-Schema input validation; per-tool timeout, circuit breaker, and rate limit.
-3. `branch` (conditional on prior output) and `parallel` (fan-out/fan-in with partial-failure policy).
-4. Token and cost accounting recorded inside `LLMCalled` events.
-5. **Optional language-signal task:** implement the tool executor as a small **Rust or Go** sidecar (HTTP tool calls with timeouts, retries, circuit breaking). Document the trade-off versus staying in Python, and benchmark both. This addresses the JD's Rust/Go interest honestly: you only claim it if you ship it.
-6. Build the demo workflow: *yield-excursion triage* with tools `read_lot_log`, `compute_excursion_stats`, `propose_hold`, `mes_place_hold` (flaky on purpose).
+1. `llm` step: provider adapter interface (`complete(messages, tools, params) -> response`) with two real providers plus a **Fake LLM** that returns scripted outputs for tests — **DONE**.
+2. `tool` step: registry with JSON-Schema input validation; per-tool timeout, circuit breaker, and rate limit — **DONE** (`ToolRegistry` in `replay/adapters/tool.py`).
+3. `branch` (conditional on prior output) and `parallel` (fan-out/fan-in with partial-failure policy) — state machine now handles `ToolCalled` (write-ahead marker) / `ToolReturned` / `LLMCalled` events in `replay/core/state.py`.
+4. Token and cost accounting recorded inside `LLMCalled` events — **DONE** (`LLMCalledEvent` in `replay/core/llmcalled.py`, adapter token/cost methods, reducer records LLMCalled).
 
 **Deliverables:** four step types, adapters, demo workflow running end-to-end.
+
 **Exit criteria:** demo workflow completes on the Fake LLM in CI and on a real LLM manually.
 
 ---

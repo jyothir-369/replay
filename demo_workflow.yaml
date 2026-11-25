@@ -1,0 +1,47 @@
+name: yield-excursion-triage
+version: "0.1.0"
+steps:
+  - step_id: read_lot_log
+    type: tool
+    config:
+      tool: read_lot_log
+      lot_id: L001
+    retry:
+      max_attempts: 3
+      base_delay: 1.0
+      timeout: 30
+      idempotency_key: "read_lot_log.L001"
+    policy: []
+  - step_id: compute_excursion_stats
+    type: tool
+    config:
+      tool: compute_excursion_stats
+      lot_id: L001
+    retry:
+      max_attempts: 2
+      base_delay: 1.0
+      timeout: 20
+      idempotency_key: "compute_excursion_stats.L001"
+    policy: []
+  - step_id: propose_hold
+    type: llm
+    config:
+      model: claude-sonnet-5
+      prompt: "Propose whether to place lot L001 on hold based on the above data."
+      retry: {}
+      policy: []
+      timeout: 15
+    depends_on: [read_lot_log]
+    policy: []
+  - step_id: mes_place_hold
+    type: tool
+    config:
+      tool: mes_place_hold
+      lot_id: L001
+    retry:
+      max_attempts: 2
+      base_delay: 1.0
+      timeout: 20
+      idempotency_key: "mes_place_hold.L001"
+    policy: []
+    depends_on: [propose_hold]
