@@ -82,7 +82,24 @@ def derive_state(events: List[Event]) -> RunState:
             state.status = "RUN_COMPLETED"
         elif ev.type == "RunFailed":
             state.status = "RUN_FAILED"
-        state.data[ev.type] = p
+        elif ev.type == "LLMCalled":
+            # Token & cost recorded on LLMCalled event; payload carries model/input_tokens/output_tokens/cost_usd
+            pass  # just record
+        elif ev.type in ("ToolCalled", "ToolReturned"):
+            if ev.type == "ToolCalled":
+                # write-ahead marker: a pending step is being worked on
+                if step_queue and step_queue[0] == ev.payload.get("step_id"):
+                    step_queue.pop(0)
+            else:  # ToolReturned
+                if ev.payload.get("tool") == "read_lot_log":
+                    pass  # just record
+                elif ev.payload.get("tool") == "compute_excursion_stats":
+                    pass
+                elif ev.payload.get("step_id") == "propose_hold":
+                    state.current_step = None
+                    state.completed_steps.append("propose_hold")
+                    if step_queue and step_queue[0] == ev.payload.get("step_id"):
+                        step_queue.pop(0)
 
     state.pending_approvals = approvals
     return state
